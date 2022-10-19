@@ -1,0 +1,32 @@
+[
+    {
+        "name": "Total Population",
+        "description": "Total Population",
+        "code": "SP.POP.TOTL"
+    },
+    {
+        "name": "CO2 emissions",
+        "description": "CO2 emissions (metric tons per capita)",
+        "code": "EN.ATM.CO2E.PC"
+    },
+    {
+        "name": "PM2.5 air pollution",
+        "description": "PM2.5 air pollution, mean annual exposure (micrograms per cubic meter)",
+        "code": "EN.ATM.PM25.MC.M3"
+    },
+    {
+        "name": "Forest area",
+        "description": "Forest area (% of land area)",
+        "code": "AG.LND.FRST.ZS"
+    },
+    {
+        "name": "Energy use",
+        "description": "Energy use (kg of oil equivalent per capita)",
+        "code": "EG.USE.PCAP.KG.OE"
+    },
+    {
+        "name": "GDP per capita",
+        "description": "GDP per capita (current US$)",
+        "code": "NY.GDP.PCAP.CD"
+    }
+]
