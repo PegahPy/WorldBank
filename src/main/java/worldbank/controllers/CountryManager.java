@@ -1,6 +1,8 @@
-package worldbank;
+package worldbank.controllers;
 
 import java.util.List;
+
+import worldbank.models.Country;
 
 public class CountryManager {
 	private static CountryManager instance;

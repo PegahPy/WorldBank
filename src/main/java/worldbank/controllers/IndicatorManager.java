@@ -1,4 +1,4 @@
-package worldbank;
+package worldbank.controllers;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -10,6 +10,10 @@ import java.util.List;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import lombok.Data;
+import worldbank.models.Indicator;
+
+@Data
 public class IndicatorManager {
 	private static IndicatorManager instance;
 	private final static String FILEPATH = "src/main/resources/indicators.json";
@@ -43,5 +47,9 @@ public class IndicatorManager {
 	
 	public List<Indicator> getAllIndicators() {
 		return indicators;
+	}
+	
+	public Indicator getIndicatorByName(String name) {
+		return indicators.stream().filter(i -> i.getName().equals(name)).findFirst().orElse(null);
 	}
 }

@@ -1,4 +1,4 @@
-package worldbank;
+package worldbank.models;
 
 import lombok.Data;
 

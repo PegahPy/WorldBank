@@ -1,4 +1,4 @@
-package worldbank;
+package worldbank.viewcontrollers;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -14,6 +14,9 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+
+import worldbank.controllers.UserManager;
+
 import javax.swing.JOptionPane;
 
 
