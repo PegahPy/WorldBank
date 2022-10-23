@@ -28,5 +28,40 @@
         "name": "GDP per capita",
         "description": "GDP per capita (current US$)",
         "code": "NY.GDP.PCAP.CD"
+    },
+    {
+        "name": "Hospital beds",
+        "description": "Hospital beds (per 1,000 people)",
+        "code": "SH.MED.BEDS.ZS"
+    },
+    {
+        "name": "Government expenditure",
+        "description": "Government expenditure on education, total (% of GDP)",
+        "code": "SE.XPD.TOTL.GD.ZS"
+    },
+    {
+        "name": "Maternal mortality ratio",
+        "description": "Maternal mortality ratio (modeled estimate, per 100,000 live births)",
+        "code": "SH.STA.MMRT"
+    },
+    {
+        "name": "Current health expenditure per capita",
+        "description": "Current health expenditure per capita (current US$)",
+        "code": "SH.XPD.CHEX.PC.CD"
+    },
+    {
+        "name": "Current health expenditure",
+        "description": "Current health expenditure (% of GDP)",
+        "code": "SH.XPD.CHEX.GD.ZS"
+    },
+    {
+        "name": "Mortality rate, infant",
+        "description": "Mortality rate, infant (per 1,000 live births)",
+        "code": "SP.DYN.IMRT.IN"
+    },
+    {
+        "name": "Problems in accessing health care",
+        "description": "Problems in accessing health care (% of women): Q1 (lowest)",
+        "code": "SH.ACS.MONY.Q1.ZS"
     }
 ]

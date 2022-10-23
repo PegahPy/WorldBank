@@ -67,6 +67,7 @@ public class FetchData {
 		List<Double> resaults = new ArrayList<>();
 		try {
 			URL url = new URL(String.format(BASE_URL, country.getId(), indicator.getCode(), fromYear, toYear));
+			System.out.println(String.format("Fetching %s for country %s With %s", indicator.getCode(), country.getId(), url));
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("GET");
 			conn.connect();
@@ -84,7 +85,6 @@ public class FetchData {
 				for (int i = 0; i < sizeOfResults; i++) {
 					resaults.add(jsonArray.get(1).getAsJsonArray().get(i).getAsJsonObject().get("value").getAsDouble());
 				}
-				System.out.println(String.format("Fetched %s for country %s", indicator.getCode(), country.getId()));
 			}
 
 		} catch (IOException e) {
