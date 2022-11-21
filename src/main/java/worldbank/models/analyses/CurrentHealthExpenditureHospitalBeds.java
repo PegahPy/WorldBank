@@ -29,5 +29,9 @@ public class CurrentHealthExpenditureHospitalBeds extends Analysis {
 		lastResault.add(processedData);
 		return lastResault;
 	}
+	@Override
+	public Analysis copy() {
+		return new CurrentHealthExpenditureHospitalBeds();
+	}
 
 }

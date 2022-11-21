@@ -27,5 +27,10 @@ public class GovernmentExpenditure extends Analysis {
 		lastResault.add(processedData);
 		return lastResault;
 	}
+	
+	@Override
+	public Analysis copy() {
+		return new GovernmentExpenditure();
+	}
 
 }

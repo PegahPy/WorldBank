@@ -32,5 +32,9 @@ public class CO2EnergyAirPollution extends Analysis {
 		}
 		return lastResault;
 	}
-
+	
+	@Override
+	public Analysis copy() {
+		return new CO2EnergyAirPollution();
+	}
 }

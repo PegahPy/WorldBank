@@ -31,5 +31,10 @@ public class ProblemsInAccessingHealthCareMortalityRate extends Analysis {
 		}
 		return lastResault;
 	}
+	
+	@Override
+	public Analysis copy() {
+		return new ProblemsInAccessingHealthCareMortalityRate();
+	}
 
 }

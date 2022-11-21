@@ -46,12 +46,12 @@ public class FetchData {
 				}
 				sc.close();
 				JsonArray jsonArray = new JsonParser().parse(inline).getAsJsonArray();
-				int size = jsonArray.size();
 				int sizeOfResults = jsonArray.get(1).getAsJsonArray().size();
 				for (int i = 0; i < sizeOfResults; i++) {
-					Country country = new Country();
-					country.setName(jsonArray.get(1).getAsJsonArray().get(i).getAsJsonObject().get("name").getAsString());
-					country.setId(jsonArray.get(1).getAsJsonArray().get(i).getAsJsonObject().get("id").getAsString());
+					Country country = Country.builder()
+							.name(jsonArray.get(1).getAsJsonArray().get(i).getAsJsonObject().get("name").getAsString())
+							.id(jsonArray.get(1).getAsJsonArray().get(i).getAsJsonObject().get("id").getAsString())
+							.build();
 					countries.add(country);
 				}
 				System.out.println("fetched all countries");

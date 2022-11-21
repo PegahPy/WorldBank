@@ -13,7 +13,7 @@ public class AirPollutionForestArea extends Analysis {
 
 	public AirPollutionForestArea() {
 		super();
-		this.name = "PM2.5 air pollution vs Forest area ";
+		this.name = "PM2.5 air pollution vs Forest area";
 		Indicator i1 = indicatorManager.getIndicatorByName("PM2.5 air pollution");
 		Indicator i2 = indicatorManager.getIndicatorByName("Forest area");
 		this.activeIndicators = Arrays.asList(i1, i2);
@@ -29,5 +29,10 @@ public class AirPollutionForestArea extends Analysis {
 			lastResault.add(processedData);
 		}
 		return lastResault;
+	}
+
+	@Override
+	public Analysis copy() {
+		return new AirPollutionForestArea();
 	}
 }

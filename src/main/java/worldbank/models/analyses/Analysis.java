@@ -1,9 +1,6 @@
 package worldbank.models.analyses;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import worldbank.controllers.FetchData;
@@ -29,4 +26,5 @@ public abstract class Analysis {
 	}
 	
 	public abstract List<List<ViewData>> Calculate(Country country, int fromYear, int toYear);
+	public abstract Analysis copy();
 }

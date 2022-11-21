@@ -1,24 +1,12 @@
 package worldbank.controllers;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-
+import factory.AnalysisFactory;
 import lombok.Data;
 import worldbank.models.Country;
-import worldbank.models.Indicator;
 import worldbank.models.ViewData;
-import worldbank.models.analyses.AirPollutionForestArea;
 import worldbank.models.analyses.Analysis;
-import worldbank.models.analyses.CO2EmissionsGDPperCapita;
-import worldbank.models.analyses.CO2EnergyAirPollution;
-import worldbank.models.analyses.CurrentHealthExpenditureHospitalBeds;
-import worldbank.models.analyses.ForestArea;
-import worldbank.models.analyses.GovernmentExpenditure;
-import worldbank.models.calculations.AnnualPercentageChange;
-import worldbank.models.calculations.ICalculation;
-import worldbank.models.calculations.Ratio;
 
 @Data
 public class AnalysisManager {
@@ -40,12 +28,13 @@ public class AnalysisManager {
 	}
 	
 	private void populateAnalyses() {
-		Analysis a1 = new CO2EnergyAirPollution();
-		Analysis a2 = new AirPollutionForestArea();
-		Analysis a3 = new CO2EmissionsGDPperCapita();
-		Analysis a4 = new ForestArea();
-		Analysis a5 = new GovernmentExpenditure();
-		Analysis a6 = new CurrentHealthExpenditureHospitalBeds();
+		AnalysisFactory analysisFacorty = new AnalysisFactory();
+		Analysis a1 = analysisFacorty.createAnalysis("CO2 vs Energy Use vs PM2.5 air pollution Annual Change");
+		Analysis a2 = analysisFacorty.createAnalysis("PM2.5 air pollution vs Forest area");
+		Analysis a3 = analysisFacorty.createAnalysis("CO2 emissions vs GDP per capita");
+		Analysis a4 = analysisFacorty.createAnalysis("Current Health Expenditure vs Hospital Beds");
+		Analysis a5 = analysisFacorty.createAnalysis("Forest Area");
+		Analysis a6 = analysisFacorty.createAnalysis("Government Expenditure on Education");
 		analeses.add(a1);
 		analeses.add(a2);
 		analeses.add(a3);
