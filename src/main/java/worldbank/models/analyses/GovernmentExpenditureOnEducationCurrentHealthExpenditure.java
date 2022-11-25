@@ -10,18 +10,16 @@ import worldbank.models.Country;
 import worldbank.models.Indicator;
 import worldbank.models.ViewData;
 import worldbank.models.calculations.AnnualPercentageChange;
-import worldbank.models.calculations.Ratio;
+import worldbank.models.calculations.Average;
 
-public class CO2EnergyAirPollution extends Analysis {
-
-	public CO2EnergyAirPollution(){
+public class GovernmentExpenditureOnEducationCurrentHealthExpenditure extends Analysis{
+	public GovernmentExpenditureOnEducationCurrentHealthExpenditure(){
 		super();
-		this.name = "CO2 vs Energy Use vs PM2.5 air pollution Annual Change";
+		this.name = "Government expenditure on education vs Current health expenditure";
 		try {
-			Indicator i1 = indicatorManager.getIndicatorByName("CO2 emissions");
-			Indicator i2 = indicatorManager.getIndicatorByName("Energy use");
-			Indicator i3 = indicatorManager.getIndicatorByName("PM2.5 air pollution");
-			this.activeIndicators = Arrays.asList(i1, i2, i3);
+			Indicator i1 = indicatorManager.getIndicatorByName("Government expenditure");
+			Indicator i2 = indicatorManager.getIndicatorByName("Current health expenditure");
+			this.activeIndicators = Arrays.asList(i1, i2);
 			this.setCalculation(new AnnualPercentageChange());
 		} catch (IndicatorNotFoundException e) {
 			e.printStackTrace();
@@ -32,7 +30,7 @@ public class CO2EnergyAirPollution extends Analysis {
 	public List<List<ViewData>> Calculate(Country country, int fromYear, int toYear) throws DataNotAvailableException {
 		List<List<ViewData>> lastResault = new ArrayList<>();
 		for(Indicator indicator : this.getActiveIndicators()) {
-			List<Double> rawData = fetchData.fetchIndicatorResaults(country, indicator, fromYear - 1 , toYear);
+			List<Double> rawData = fetchData.fetchIndicatorResaults(country, indicator, fromYear - 1, toYear);
 			List<ViewData> processedData = this.getCalculation().getCalculateMethod(rawData, toYear);
 			lastResault.add(processedData);
 		}
@@ -41,6 +39,7 @@ public class CO2EnergyAirPollution extends Analysis {
 	
 	@Override
 	public Analysis copy(){
-		return new CO2EnergyAirPollution();
+		return new GovernmentExpenditureOnEducationCurrentHealthExpenditure();
 	}
+
 }

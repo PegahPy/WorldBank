@@ -6,6 +6,10 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 import javax.swing.BorderFactory;
@@ -13,6 +17,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -40,8 +45,40 @@ import org.jfree.data.time.Year;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import javafx.scene.chart.Chart;
+import worldbank.controllers.AnalysisManager;
+import worldbank.controllers.CountryManager;
+import worldbank.enums.ChartTypes;
+import worldbank.exceptions.CalculationFailedException;
+import worldbank.exceptions.DataNotAvailableException;
+import worldbank.models.Country;
+import worldbank.models.ViewData;
+import worldbank.models.analyses.Analysis;
+import java.util.stream.Collectors;
+
 public class GuiMain extends JFrame{
 	private static GuiMain instance;
+	private static AnalysisManager analysisManager;
+	private CountryManager countryManager;
+	
+	private List<List<ViewData>> viewData;
+	private List<Chart> activeCharts;
+	private String activeCountry;
+	private Analysis activeAnalysis;
+	private int fromYear;
+	private int toYear;
+	
+    protected JPanel north;
+    protected JPanel south;
+    protected JPanel center;
+
+    protected JComboBox<String> countriesList;
+    protected JComboBox<String> fromList;
+    protected JComboBox<String> toList;
+    protected JComboBox<String> analysisList;
+    protected JButton recalculateBtn;
+    protected JButton removeChartBtn;
+    protected JButton addChartBtn;
 
 	public static GuiMain getInstance() {
 		if (instance == null)
@@ -53,38 +90,84 @@ public class GuiMain extends JFrame{
 	private GuiMain() {
 		// Set window title
 		super("Country Statistics");
+		this.setup();
+		this.addCountries();
+		this.addYears();
+		
+		this.addViewSelect();
+		this.addAnalysisSelect();
+		this.addRecalculate();
+		
+		this.addCharts();
+		this.initialize();
 
-		// Set top bar
+		getContentPane().add(this.north, BorderLayout.NORTH);
+		getContentPane().add(south, BorderLayout.SOUTH);
+		getContentPane().add(center, BorderLayout.WEST);
+	}
+	
+	private void setup() {
+		analysisManager = AnalysisManager.getInstance();
+		countryManager = CountryManager.getInstance();
+		activeCharts = new ArrayList<>();
+		
+        this.north = new JPanel();
+        this.south = new JPanel();
+        this.center = new JPanel();        
+	}
+	
+	private void addCountries() {
 		JLabel chooseCountryLabel = new JLabel("Choose a country: ");
-		Vector<String> countriesNames = new Vector<String>();
-		countriesNames.add("USA");
-		countriesNames.add("Canada");
-		countriesNames.add("France");
-		countriesNames.add("China");
-		countriesNames.add("Brazil");
+		Vector<String> countriesNames = this.loadCountries();
 		countriesNames.sort(null);
-		JComboBox<String> countriesList = new JComboBox<String>(countriesNames);
-
+		this.countriesList = new JComboBox<String>(countriesNames);
+		
+		north.add(chooseCountryLabel);
+		north.add(countriesList);
+	}
+	
+	private Vector<String> loadCountries() {
+		Vector<String> countriesVector = new Vector<>();;
+		List<Country> countriesList;
+		try {
+			countriesList = countryManager.getAllCountries();
+			countriesList.stream().forEach(c -> {
+				countriesVector.add(c.getName());
+			});
+		} catch (DataNotAvailableException e) {
+			e.printStackTrace();
+		}
+		return countriesVector;
+	}
+	
+	private void addYears() {
 		JLabel from = new JLabel("From");
 		JLabel to = new JLabel("To");
 		Vector<String> years = new Vector<String>();
 		for (int i = 2021; i >= 2010; i--) {
 			years.add("" + i);
 		}
-		JComboBox<String> fromList = new JComboBox<String>(years);
-		JComboBox<String> toList = new JComboBox<String>(years);
+		fromList = new JComboBox<String>(years);
+		toList = new JComboBox<String>(years);
 
-		JPanel north = new JPanel();
-		north.add(chooseCountryLabel);
-		north.add(countriesList);
-		north.add(from);
-		north.add(fromList);
-		north.add(to);
-		north.add(toList);
+		this.north.add(from);
+		this.north.add(fromList);
+		this.north.add(to);
+		this.north.add(toList);
+	}
+	
+	private void addRecalculate() {
+		this.recalculateBtn = new JButton("Recalculate");
+		recalculateBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				performCalculation();
+			}
+		});
+		south.add(recalculateBtn);
 
-		// Set bottom bar
-		JButton recalculate = new JButton("Recalculate");
-
+	}
+	
+	private void addViewSelect() {
 		JLabel viewsLabel = new JLabel("Available Views: ");
 
 		Vector<String> viewsNames = new Vector<String>();
@@ -94,283 +177,85 @@ public class GuiMain extends JFrame{
 		viewsNames.add("Scatter Chart");
 		viewsNames.add("Report");
 		JComboBox<String> viewsList = new JComboBox<String>(viewsNames);
-		JButton addView = new JButton("+");
-		JButton removeView = new JButton("-");
-
-		JLabel methodLabel = new JLabel("        Choose analysis method: ");
-
-		Vector<String> methodsNames = new Vector<String>();
-		methodsNames.add("Mortality");
-		methodsNames.add("Mortality vs Expenses");
-		methodsNames.add("Mortality vs Expenses & Hospital Beds");
-		methodsNames.add("Mortality vs GDP");
-		methodsNames.add("Unemployment vs GDP");
-		methodsNames.add("Unemployment");
-
-		JComboBox<String> methodsList = new JComboBox<String>(methodsNames);
-
-		JPanel south = new JPanel();
+		addChartBtn = new JButton("+");
+		removeChartBtn= new JButton("-");
 		south.add(viewsLabel);
 		south.add(viewsList);
-		south.add(addView);
-		south.add(removeView);
-
-		south.add(methodLabel);
-		south.add(methodsList);
-		south.add(recalculate);
-
-		JPanel east = new JPanel();
-
-		// Set charts region
-		JPanel west = new JPanel();
-		west.setLayout(new GridLayout(2, 0));
-		createCharts(west);
-
-		getContentPane().add(north, BorderLayout.NORTH);
-		getContentPane().add(east, BorderLayout.EAST);
-		getContentPane().add(south, BorderLayout.SOUTH);
-		getContentPane().add(west, BorderLayout.WEST);
+		addChartBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				addChart();
+			}
+		});
+		removeChartBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				removeChart();
+			}
+		});
+		south.add(addChartBtn);
+		south.add(removeChartBtn);
 	}
 	
-	private void createCharts(JPanel west) {
-		createLine(west);
-		createTimeSeries(west);
-		createBar(west);
-		createPie(west);
-		createScatter(west);
-		createReport(west);
-
+	private void addAnalysisSelect() {
+		JLabel methodLabel = new JLabel("        Choose analysis method: ");		
+		Vector<String> methodsNames = new Vector<>();;
+		List<Analysis> analyses;
+		analyses = analysisManager.getAnaleses();
+		analyses.stream().forEach(c -> {
+			methodsNames.add(c.getName());
+		});
+		analysisList = new JComboBox<String>(methodsNames);
+		south.add(methodLabel);
+		south.add(analysisList);
+	}
+	
+	private void addCharts() {
+		center.setLayout(new GridLayout(2, 0));
 	}
 
-	private void createReport(JPanel west) {
-		JTextArea report = new JTextArea();
-		report.setEditable(false);
-		report.setPreferredSize(new Dimension(400, 300));
-		report.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-		report.setBackground(Color.white);
-		String reportMessage, reportMessage2;
-
-		reportMessage = "Mortality vs Expenses & Hospital Beds\n" + "==============================\n" + "Year 2018:\n"
-				+ "\tMortality/1000 births => 5.6\n" + "\tHealth Expenditure per Capita => 10624\n"
-				+ "\tHospital Beds/1000 people => 2.92\n" + "\n" + "Year 2017:\n" + "\tMortality/1000 births => 5.7\n"
-				+ "\tHealth Expenditure per Capita => 10209\n" + "\tHospital Beds/1000 people => 2.87\n" + "\n"
-				+ "Year 2016:\n" + "\tMortality/1000 births => 5.8\n" + "\tHealth Expenditure per Capita => 9877\n"
-				+ "\tHospital Beds/1000 people => 2.77\n";
-
-		reportMessage2 = "Unemployment: Mev vs Women\n" + "==========================\n" + "Men=>\n"
-				+ "\tEmployed: 96.054%\n" + "\tUnemployed: 3.946%\n" + "\n" + "Women=>\n" + "\tEmployed: 96.163%\n"
-				+ "\tUnemployed: 3.837%\n";
-
-		report.setText(reportMessage);
-		JScrollPane outputScrollPane = new JScrollPane(report);
-		west.add(outputScrollPane);
+	private void performCalculation() {
+		System.out.println("Performing Calculation");
+		updateActiveFields();
+		removeAllCharts();
+		updateLineChart();
+		updateTimeSeries();
+		updateBar();
+		updatePie();
+		updateScatter();
+		updateReport();
+		refreshCharts();
 	}
-
-	private void createScatter(JPanel west) {
-		TimeSeries series1 = new TimeSeries("Mortality/1000 births");
-		series1.add(new Year(2018), 5.6);
-		series1.add(new Year(2017), 5.7);
-		series1.add(new Year(2016), 5.8);
-		series1.add(new Year(2015), 5.8);
-		series1.add(new Year(2014), 5.9);
-		series1.add(new Year(2013), 6.0);
-		series1.add(new Year(2012), 6.1);
-		series1.add(new Year(2011), 6.2);
-		series1.add(new Year(2010), 6.4);
-
-		TimeSeries series2 = new TimeSeries("Health Expenditure per Capita");
-		series2.add(new Year(2018), 10624);
-		series2.add(new Year(2017), 10209);
-		series2.add(new Year(2016), 9877);
-		series2.add(new Year(2015), 9491);
-		series2.add(new Year(2014), 9023);
-		series2.add(new Year(2013), 8599);
-		series2.add(new Year(2012), 8399);
-		series2.add(new Year(2011), 8130);
-		series2.add(new Year(2010), 7930);
-		TimeSeriesCollection dataset2 = new TimeSeriesCollection();
-		dataset2.addSeries(series2);
-
-		TimeSeries series3 = new TimeSeries("Hospital Beds/1000 people");
-		series3.add(new Year(2018), 2.92);
-		series3.add(new Year(2017), 2.87);
-		series3.add(new Year(2016), 2.77);
-		series3.add(new Year(2015), 2.8);
-		series3.add(new Year(2014), 2.83);
-		series3.add(new Year(2013), 2.89);
-		series3.add(new Year(2012), 2.93);
-		series3.add(new Year(2011), 2.97);
-		series3.add(new Year(2010), 3.05);
-
-		TimeSeriesCollection dataset = new TimeSeriesCollection();
-		dataset.addSeries(series1);
-		dataset.addSeries(series3);
-
-		XYPlot plot = new XYPlot();
-		XYItemRenderer itemrenderer1 = new XYLineAndShapeRenderer(false, true);
-		XYItemRenderer itemrenderer2 = new XYLineAndShapeRenderer(false, true);
-
-		plot.setDataset(0, dataset);
-		plot.setRenderer(0, itemrenderer1);
-		DateAxis domainAxis = new DateAxis("Year");
-		plot.setDomainAxis(domainAxis);
-		plot.setRangeAxis(new NumberAxis(""));
-
-		plot.setDataset(1, dataset2);
-		plot.setRenderer(1, itemrenderer2);
-		plot.setRangeAxis(1, new NumberAxis("US$"));
-
-		plot.mapDatasetToRangeAxis(0, 0);// 1st dataset to 1st y-axis
-		plot.mapDatasetToRangeAxis(1, 1); // 2nd dataset to 2nd y-axis
-
-		JFreeChart scatterChart = new JFreeChart("Mortality vs Expenses & Hospital Beds",
-				new Font("Serif", java.awt.Font.BOLD, 18), plot, true);
-
-		ChartPanel chartPanel = new ChartPanel(scatterChart);
-		chartPanel.setPreferredSize(new Dimension(400, 300));
-		chartPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-		chartPanel.setBackground(Color.white);
-		west.add(chartPanel);
+	
+	private void removeAllCharts() {
+		center.removeAll();
 	}
-
-	private void createPie(JPanel west) {
-		// Different way to create pie chart
-		/*
-		 * var dataset = new DefaultPieDataset(); dataset.setValue("Unemployed", 3.837);
-		 * dataset.setValue("Employed", 96.163);
-		 * 
-		 * JFreeChart pieChart = ChartFactory.createPieChart("Women's Unemployment",
-		 * dataset, true, true, false);
-		 */
-
-		DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-		dataset.addValue(3.946, "Unemployed", "Men");
-		dataset.addValue(96.054, "Employed", "Men");
-		dataset.addValue(3.837, "Unemployed", "Women");
-		dataset.addValue(96.163, "Employed", "Women");
-
-		JFreeChart pieChart = ChartFactory.createMultiplePieChart("Unemployment: Men vs Women", dataset,
-				TableOrder.BY_COLUMN, true, true, false);
-
-		ChartPanel chartPanel = new ChartPanel(pieChart);
-		chartPanel.setPreferredSize(new Dimension(400, 300));
-		chartPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-		chartPanel.setBackground(Color.white);
-		west.add(chartPanel);
+	private void refreshCharts() {
+		center.validate();
+		center.repaint();
 	}
-
-	private void createBar(JPanel west) {
-		DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-		dataset.setValue(5.6, "Mortality/1000 births", "2018");
-		dataset.setValue(5.7, "Mortality/1000 births", "2017");
-		dataset.setValue(5.8, "Mortality/1000 births", "2016");
-		dataset.setValue(5.8, "Mortality/1000 births", "2015");
-		dataset.setValue(5.9, "Mortality/1000 births", "2014");
-		dataset.setValue(6, "Mortality/1000 births", "2013");
-		dataset.setValue(6.1, "Mortality/1000 births", "2012");
-		dataset.setValue(6.2, "Mortality/1000 births", "2011");
-		dataset.setValue(6.4, "Mortality/1000 births", "2010");
-
-		dataset.setValue(2.92, "Hospital beds/1000 people", "2018");
-		dataset.setValue(2.87, "Hospital beds/1000 people", "2017");
-		dataset.setValue(2.77, "Hospital beds/1000 people", "2016");
-		dataset.setValue(2.8, "Hospital beds/1000 people", "2015");
-		dataset.setValue(2.83, "Hospital beds/1000 people", "2014");
-		dataset.setValue(2.89, "Hospital beds/1000 people", "2013");
-		dataset.setValue(2.93, "Hospital beds/1000 people", "2012");
-		dataset.setValue(2.97, "Hospital beds/1000 people", "2011");
-		dataset.setValue(3.05, "Hospital beds/1000 people", "2010");
-
-		DefaultCategoryDataset dataset2 = new DefaultCategoryDataset();
-
-		dataset2.setValue(10623, "Health Expenditure per Capita", "2018");
-		dataset2.setValue(10209, "Health Expenditure per Capita", "2017");
-		dataset2.setValue(9877, "Health Expenditure per Capita", "2016");
-		dataset2.setValue(9491, "Health Expenditure per Capita", "2015");
-		dataset2.setValue(9023, "Health Expenditure per Capita", "2014");
-		dataset2.setValue(8599, "Health Expenditure per Capita", "2013");
-		dataset2.setValue(8399, "Health Expenditure per Capita", "2012");
-		dataset2.setValue(8130, "Health Expenditure per Capita", "2011");
-		dataset2.setValue(7930, "Health Expenditure per Capita", "2010");
-
-		CategoryPlot plot = new CategoryPlot();
-		BarRenderer barrenderer1 = new BarRenderer();
-		BarRenderer barrenderer2 = new BarRenderer();
-
-		plot.setDataset(0, dataset);
-		plot.setRenderer(0, barrenderer1);
-		CategoryAxis domainAxis = new CategoryAxis("Year");
-		plot.setDomainAxis(domainAxis);
-		plot.setRangeAxis(new NumberAxis(""));
-
-		plot.setDataset(1, dataset2);
-		plot.setRenderer(1, barrenderer2);
-		plot.setRangeAxis(1, new NumberAxis("US$"));
-
-		plot.mapDatasetToRangeAxis(0, 0);// 1st dataset to 1st y-axis
-		plot.mapDatasetToRangeAxis(1, 1); // 2nd dataset to 2nd y-axis
-
-		JFreeChart barChart = new JFreeChart("Mortality vs Expenses & Hospital Beds",
-				new Font("Serif", java.awt.Font.BOLD, 18), plot, true);
-
-		// Different way to create bar chart
-		/*
-		 * dataset = new DefaultCategoryDataset();
-		 * 
-		 * dataset.addValue(3.946, "Unemployed", "Men"); dataset.addValue(96.054,
-		 * "Employed", "Men"); dataset.addValue(3.837, "Unemployed", "Women");
-		 * dataset.addValue(96.163, "Employed", "Women"); barChart =
-		 * ChartFactory.createBarChart("Unemployment: Men vs Women", "Gender",
-		 * "Percentage", dataset, PlotOrientation.VERTICAL, true, true, false);
-		 */
-
-		ChartPanel chartPanel = new ChartPanel(barChart);
-		chartPanel.setPreferredSize(new Dimension(400, 300));
-		chartPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-		chartPanel.setBackground(Color.white);
-		west.add(chartPanel);
+	
+	private void updateActiveFields() {
+		this.activeCountry = String.valueOf(countriesList.getSelectedItem());
+		this.activeAnalysis = analysisManager.getAnalysisByName(String.valueOf(analysisList.getSelectedItem()));
+		this.fromYear = Integer.parseInt(String.valueOf(fromList.getSelectedItem()));
+		this.toYear = Integer.parseInt(String.valueOf(toList.getSelectedItem()));
+		try {
+			this.viewData = analysisManager.calculateAnalysis(activeCountry, activeAnalysis.getName(), fromYear, toYear);
+		} catch (DataNotAvailableException | CalculationFailedException e) {
+			JOptionPane.showMessageDialog(null, "Sorry the data is not available for selected country and years");
+			e.printStackTrace();
+		}
 	}
-
-	private void createLine(JPanel west) {
-		XYSeries series1 = new XYSeries("Mortality/1000 births");
-		series1.add(2018, 5.6);
-		series1.add(2017, 5.7);
-		series1.add(2016, 5.8);
-		series1.add(2015, 5.8);
-		series1.add(2014, 5.9);
-		series1.add(2013, 6.0);
-		series1.add(2012, 6.1);
-		series1.add(2011, 6.2);
-		series1.add(2010, 6.4);
-
-		XYSeries series2 = new XYSeries("Health Expenditure per Capita");
-		series2.add(2018, 10624);
-		series2.add(2017, 10209);
-		series2.add(2016, 9877);
-		series2.add(2015, 9491);
-		series2.add(2014, 9023);
-		series2.add(2013, 8599);
-		series2.add(2012, 8399);
-		series2.add(2011, 8130);
-		series2.add(2010, 7930);
-
-		XYSeries series3 = new XYSeries("Hospital Beds/1000 people");
-		series3.add(2018, 2.92);
-		series3.add(2017, 2.87);
-		series3.add(2016, 2.77);
-		series3.add(2015, 2.8);
-		series3.add(2014, 2.83);
-		series3.add(2013, 2.89);
-		series3.add(2012, 2.93);
-		series3.add(2011, 2.97);
-		series3.add(2010, 3.05);
-
+	
+	private void updateLineChart() {
+		int numberOfLines = this.viewData.size();
 		XYSeriesCollection dataset = new XYSeriesCollection();
-		dataset.addSeries(series1);
-		dataset.addSeries(series2);
-		dataset.addSeries(series3);
-
-		JFreeChart chart = ChartFactory.createXYLineChart("Mortality vs Expenses & Hospital Beds", "Year", "", dataset,
+		for(int i = 0; i < numberOfLines; i++) {
+			String indicatorName = this.activeAnalysis.getActiveIndicators().get(i).getName();
+			XYSeries series = new XYSeries(indicatorName);
+			this.viewData.get(i).stream().forEach(v -> series.add(v.getYear(), v.getValue()));
+			dataset.addSeries(series);
+		}
+		JFreeChart chart = ChartFactory.createXYLineChart(activeAnalysis.getName(), "Year", "", dataset,
 				PlotOrientation.VERTICAL, true, true, false);
 
 		XYPlot plot = chart.getXYPlot();
@@ -391,59 +276,27 @@ public class GuiMain extends JFrame{
 		chart.getLegend().setFrame(BlockBorder.NONE);
 
 		chart.setTitle(
-				new TextTitle("Mortality vs Expenses & Hospital Beds", new Font("Serif", java.awt.Font.BOLD, 18)));
+				new TextTitle(activeAnalysis.getName(), new Font("Serif", java.awt.Font.BOLD, 18)));
 
 		ChartPanel chartPanel = new ChartPanel(chart);
 		chartPanel.setPreferredSize(new Dimension(400, 300));
 		chartPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 		chartPanel.setBackground(Color.white);
-		west.add(chartPanel);
-
+		
+		center.add(chartPanel);
 	}
-
-	private void createTimeSeries(JPanel west) {
-		TimeSeries series1 = new TimeSeries("Mortality/1000 births");
-		series1.add(new Year(2018), 5.6);
-		series1.add(new Year(2017), 5.7);
-		series1.add(new Year(2016), 5.8);
-		series1.add(new Year(2015), 5.8);
-		series1.add(new Year(2014), 5.9);
-		series1.add(new Year(2013), 6.0);
-		series1.add(new Year(2012), 6.1);
-		series1.add(new Year(2011), 6.2);
-		series1.add(new Year(2010), 6.4);
-
-		TimeSeries series2 = new TimeSeries("Health Expenditure per Capita");
-		series2.add(new Year(2018), 10624);
-		series2.add(new Year(2017), 10209);
-		series2.add(new Year(2016), 9877);
-		series2.add(new Year(2015), 9491);
-		series2.add(new Year(2014), 9023);
-		series2.add(new Year(2013), 8599);
-		series2.add(new Year(2012), 8399);
-		series2.add(new Year(2011), 8130);
-		series2.add(new Year(2010), 7930);
-		TimeSeriesCollection dataset2 = new TimeSeriesCollection();
-		dataset2.addSeries(series2);
-
-		TimeSeries series3 = new TimeSeries("Hospital Beds/1000 people");
-		series3.add(new Year(2018), 2.92);
-		series3.add(new Year(2017), 2.87);
-		series3.add(new Year(2016), 2.77);
-		series3.add(new Year(2015), 2.8);
-		series3.add(new Year(2014), 2.83);
-		series3.add(new Year(2013), 2.89);
-		series3.add(new Year(2012), 2.93);
-		series3.add(new Year(2011), 2.97);
-		series3.add(new Year(2010), 3.05);
-
+	private void updateTimeSeries() {
+		int numberOfLines = this.viewData.size();
 		TimeSeriesCollection dataset = new TimeSeriesCollection();
-		dataset.addSeries(series1);
-		dataset.addSeries(series3);
+		for(int i = 0; i < numberOfLines; i++) {
+			String indicatorName = this.activeAnalysis.getActiveIndicators().get(i).getName();
+			TimeSeries series = new TimeSeries(indicatorName);
+			this.viewData.get(i).stream().forEach(v -> series.add(new Year(v.getYear()), v.getValue()));
+			dataset.addSeries(series);
+		}
 
 		XYPlot plot = new XYPlot();
 		XYSplineRenderer splinerenderer1 = new XYSplineRenderer();
-		XYSplineRenderer splinerenderer2 = new XYSplineRenderer();
 
 		plot.setDataset(0, dataset);
 		plot.setRenderer(0, splinerenderer1);
@@ -451,22 +304,121 @@ public class GuiMain extends JFrame{
 		plot.setDomainAxis(domainAxis);
 		plot.setRangeAxis(new NumberAxis(""));
 
-		plot.setDataset(1, dataset2);
-		plot.setRenderer(1, splinerenderer2);
-		plot.setRangeAxis(1, new NumberAxis("US$"));
+		plot.mapDatasetToRangeAxis(0, 0);
 
-		plot.mapDatasetToRangeAxis(0, 0);// 1st dataset to 1st y-axis
-		plot.mapDatasetToRangeAxis(1, 1); // 2nd dataset to 2nd y-axis
-
-		JFreeChart chart = new JFreeChart("Mortality vs Expenses & Hospital Beds",
+		JFreeChart chart = new JFreeChart(activeAnalysis.getName(),
 				new Font("Serif", java.awt.Font.BOLD, 18), plot, true);
 
 		ChartPanel chartPanel = new ChartPanel(chart);
 		chartPanel.setPreferredSize(new Dimension(400, 300));
 		chartPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 		chartPanel.setBackground(Color.white);
-		west.add(chartPanel);
+		center.add(chartPanel);
 
 	}
+	private void updateBar() {
+		int numberOfLines = this.viewData.size();
+		DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+		for(int i = 0; i < numberOfLines; i++) {
+			String indicatorName = this.activeAnalysis.getActiveIndicators().get(i).getName();
+			this.viewData.get(i).stream().forEach(v -> dataset.setValue(v.getValue(), indicatorName, String.valueOf(v.getYear())));
+		}
+		CategoryPlot plot = new CategoryPlot();
+		BarRenderer barrenderer1 = new BarRenderer();
+		BarRenderer barrenderer2 = new BarRenderer();
 
+		plot.setDataset(0, dataset);
+		plot.setRenderer(0, barrenderer1);
+		CategoryAxis domainAxis = new CategoryAxis("Year");
+		plot.setDomainAxis(domainAxis);
+		plot.setRangeAxis(new NumberAxis(""));
+
+
+		plot.mapDatasetToRangeAxis(0, 0);
+
+		JFreeChart barChart = new JFreeChart(activeAnalysis.getName(),
+				new Font("Serif", java.awt.Font.BOLD, 18), plot, true);
+
+		ChartPanel chartPanel = new ChartPanel(barChart);
+		chartPanel.setPreferredSize(new Dimension(400, 300));
+		chartPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+		chartPanel.setBackground(Color.white);
+		center.add(chartPanel);
+	}
+	private void updatePie() {
+		int numberOfLines = this.viewData.size();
+		DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+		for(int i = 0; i < numberOfLines; i++) {
+			String indicatorName = this.activeAnalysis.getActiveIndicators().get(i).getName();
+			this.viewData.get(i).stream().forEach(v -> dataset.addValue(v.getValue(), String.valueOf(v.getYear()), indicatorName));
+		}
+		
+		JFreeChart pieChart = ChartFactory.createMultiplePieChart(activeAnalysis.getName(), dataset,
+				TableOrder.BY_COLUMN, true, true, false);
+
+		ChartPanel chartPanel = new ChartPanel(pieChart);
+		chartPanel.setPreferredSize(new Dimension(400, 300));
+		chartPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+		chartPanel.setBackground(Color.white);
+		center.add(chartPanel);
+	}
+	private void updateScatter() {
+		int numberOfLines = this.viewData.size();
+		TimeSeriesCollection dataset = new TimeSeriesCollection();
+		for(int i = 0; i < numberOfLines; i++) {
+			String indicatorName = this.activeAnalysis.getActiveIndicators().get(i).getName();
+			TimeSeries series = new TimeSeries(indicatorName);
+			this.viewData.get(i).stream().forEach(v -> series.add(new Year(v.getYear()), v.getValue()));
+			dataset.addSeries(series);
+		}
+
+		XYPlot plot = new XYPlot();
+		XYItemRenderer itemrenderer1 = new XYLineAndShapeRenderer(false, true);
+		XYItemRenderer itemrenderer2 = new XYLineAndShapeRenderer(false, true);
+
+		plot.setDataset(0, dataset);
+		plot.setRenderer(0, itemrenderer1);
+		DateAxis domainAxis = new DateAxis("Year");
+		plot.setDomainAxis(domainAxis);
+		plot.setRangeAxis(new NumberAxis(""));
+		plot.mapDatasetToRangeAxis(0, 0);
+		JFreeChart scatterChart = new JFreeChart(activeAnalysis.getName(),
+				new Font("Serif", java.awt.Font.BOLD, 18), plot, true);
+
+		ChartPanel chartPanel = new ChartPanel(scatterChart);
+		chartPanel.setPreferredSize(new Dimension(400, 300));
+		chartPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+		chartPanel.setBackground(Color.white);
+		center.add(chartPanel);
+	}
+	private void updateReport() {
+		JTextArea report = new JTextArea();
+		report.setEditable(false);
+		report.setPreferredSize(new Dimension(400, 300));
+		report.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+		report.setBackground(Color.white);
+		
+		int numberOfLines = this.viewData.size();
+		String reportMessage =activeAnalysis.getName() + "\n" + "==============================\n";
+		for(int i = 0; i < numberOfLines; i++) {
+			String indicatorName = this.activeAnalysis.getActiveIndicators().get(i).getName();
+			reportMessage += this.viewData.get(i).stream().map(v -> String.format("Year %s: \n %s => %s \n", v.getYear(), indicatorName, v.getValue())).collect(Collectors.joining(", "));
+		}
+
+		report.setText(reportMessage);
+		JScrollPane outputScrollPane = new JScrollPane(report);
+		center.add(outputScrollPane);
+	}
+	private void initialize() {
+		this.countriesList.setSelectedItem("United States");
+		this.fromList.setSelectedItem("2014");
+		this.toList.setSelectedItem("2017");
+		this.analysisList.setSelectedItem("PM2.5 air pollution vs Forest area");
+		this.performCalculation();
+	}
+	
+	private void removeChart() {
+	}
+	private void addChart() {
+	}
 }

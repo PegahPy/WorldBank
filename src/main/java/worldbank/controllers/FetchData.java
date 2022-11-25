@@ -10,6 +10,7 @@ import java.util.Scanner;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 
+import worldbank.exceptions.DataNotAvailableException;
 import worldbank.models.Country;
 import worldbank.models.Indicator;
 
@@ -30,7 +31,7 @@ public class FetchData {
 		
 	}
 	
-	public List<Country> fetchAllCountries() {
+	public List<Country> fetchAllCountries() throws DataNotAvailableException {
 		List<Country> countries = new ArrayList<>();
 		try {
 			URL url = new URL(COUNTRIES_URL);
@@ -57,13 +58,13 @@ public class FetchData {
 				System.out.println("fetched all countries");
 			}
 
-		} catch (IOException e) {
-			// TODO Auto-generated catch block e.printStackTrace();
+		} catch (Exception e) {
+			throw new DataNotAvailableException(String.format("Countries Data not Available"));
 		}
 		return countries;
 	}
 	
-	public List<Double> fetchIndicatorResaults(Country country, Indicator indicator ,int fromYear, int toYear){
+	public List<Double> fetchIndicatorResaults(Country country, Indicator indicator ,int fromYear, int toYear) throws DataNotAvailableException{
 		List<Double> resaults = new ArrayList<>();
 		try {
 			URL url = new URL(String.format(BASE_URL, country.getId(), indicator.getCode(), fromYear, toYear));
@@ -87,8 +88,8 @@ public class FetchData {
 				}
 			}
 
-		} catch (IOException e) {
-			// TODO Auto-generated catch block e.printStackTrace();
+		} catch (Exception e) {
+			throw new DataNotAvailableException(String.format("Data not available for country %s indicator %s From Year %s To Year %s", country.getId(), indicator.getCode(), fromYear, toYear));
 		}
 		return resaults;
 	}

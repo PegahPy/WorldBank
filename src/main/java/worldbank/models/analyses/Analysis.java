@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import worldbank.controllers.FetchData;
 import worldbank.controllers.IndicatorManager;
+import worldbank.exceptions.DataNotAvailableException;
+import worldbank.exceptions.IndicatorNotFoundException;
 import worldbank.models.Country;
 import worldbank.models.Indicator;
 import worldbank.models.ViewData;
@@ -25,6 +27,6 @@ public abstract class Analysis {
 		fetchData = FetchData.getInstance();
 	}
 	
-	public abstract List<List<ViewData>> Calculate(Country country, int fromYear, int toYear);
-	public abstract Analysis copy();
+	public abstract List<List<ViewData>> Calculate(Country country, int fromYear, int toYear) throws DataNotAvailableException;
+	public abstract Analysis copy() throws IndicatorNotFoundException;
 }
